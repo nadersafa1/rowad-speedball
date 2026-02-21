@@ -1,7 +1,6 @@
 // Championship Editions Store - Single responsibility: Championship editions state management
 import { create } from 'zustand'
 import { apiClient } from '@/lib/api-client'
-import type { PaginatedResponse } from '@/types/api/pagination'
 import type { ChampionshipEditionWithRelations } from '@/components/championship-editions/championship-editions-table-types'
 
 interface ChampionshipEditionsFilters {
@@ -107,7 +106,7 @@ export const useChampionshipEditionsStore = create<ChampionshipEditionsState>(
 
       try {
         const newEdition = (await apiClient.createChampionshipEdition(
-          data
+          data,
         )) as ChampionshipEditionWithRelations
         set((state) => ({
           editions: [...state.editions, newEdition],
@@ -128,11 +127,11 @@ export const useChampionshipEditionsStore = create<ChampionshipEditionsState>(
       try {
         const updatedEdition = (await apiClient.updateChampionshipEdition(
           id,
-          data
+          data,
         )) as ChampionshipEditionWithRelations
         set((state) => ({
           editions: state.editions.map((e) =>
-            e.id === id ? updatedEdition : e
+            e.id === id ? updatedEdition : e,
           ),
           selectedEdition:
             state.selectedEdition?.id === id
@@ -171,5 +170,5 @@ export const useChampionshipEditionsStore = create<ChampionshipEditionsState>(
 
     clearError: () => set({ error: null }),
     clearSelectedEdition: () => set({ selectedEdition: null }),
-  })
+  }),
 )
