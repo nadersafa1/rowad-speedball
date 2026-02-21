@@ -20,5 +20,7 @@
     "titleBar.inactiveBackground": "#a4540199",
     "titleBar.inactiveForeground": "#e7e7e799"
   },
-  "peacock.color": "#a45401"
+  "peacock.color": "#a45401",
+  "snyk.advanced.autoSelectOrganization": true,
+  "snyk.advanced.organization": "02bc65b0-e4d7-4689-89e0-df848562d0a6"
 }

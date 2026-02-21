@@ -4,7 +4,7 @@ import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { user, account } from '@/db/schema'
 import type { SeededUser, SeededFederation } from './types'
 
-const PASSWORD = 'Test@1234'
+const PASSWORD = process.env.SEEDER_PASSWORD!
 
 // Scrypt config matching better-auth's implementation
 const scryptConfig = {
@@ -29,7 +29,7 @@ const hashPassword = async (password: string): Promise<string> => {
 
 export const seedFederationUsers = async (
   db: NodePgDatabase,
-  federations: SeededFederation[]
+  federations: SeededFederation[],
 ): Promise<SeededUser[]> => {
   console.log('🌱 Seeding federation users...')
 
@@ -116,10 +116,10 @@ export const seedFederationUsers = async (
 
   console.log(`✅ Created ${seededUsers.length} federation users`)
   console.log(
-    `   - ${seededUsers.filter((u) => u.role === 'federation-admin').length} federation admins`
+    `   - ${seededUsers.filter((u) => u.role === 'federation-admin').length} federation admins`,
   )
   console.log(
-    `   - ${seededUsers.filter((u) => u.role === 'federation-editor').length} federation editors`
+    `   - ${seededUsers.filter((u) => u.role === 'federation-editor').length} federation editors`,
   )
 
   return seededUsers

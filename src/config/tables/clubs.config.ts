@@ -27,7 +27,7 @@ export const clubsTableConfig: TableConfig<ClubWithCount, ClubsTableFilters> = {
     search: true,
     filters: false,
     sorting: true,
-    pagination: false, // Currently no pagination in server component
+    pagination: true,
     selection: false,
     export: true,
     columnVisibility: true,

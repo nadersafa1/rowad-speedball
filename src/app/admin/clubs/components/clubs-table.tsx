@@ -204,14 +204,16 @@ export default function ClubsTable({
       />
 
       {/* Pagination */}
-      <TablePagination
-        pagination={pagination}
-        onPageChange={onPageChange}
-        onPageSizeChange={onPageSizeChange}
-        pageSizeOptions={clubsTableConfig.pageSizeOptions}
-        showPageSizeSelector={true}
-        showPageNumbers={true}
-      />
+      {clubsTableConfig.features.pagination && (
+        <TablePagination
+          pagination={pagination}
+          onPageChange={onPageChange}
+          onPageSizeChange={onPageSizeChange}
+          pageSizeOptions={clubsTableConfig.pageSizeOptions}
+          showPageSizeSelector={true}
+          showPageNumbers={true}
+        />
+      )}
 
       {/* Edit Dialog */}
       {editClub && (

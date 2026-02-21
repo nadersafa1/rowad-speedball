@@ -17,7 +17,7 @@ import type {
 } from './types'
 
 export const runAllSeeders = async (
-  db: NodePgDatabase
+  db: NodePgDatabase,
 ): Promise<SeederContext> => {
   console.log('\n🚀 Starting database seeding...\n')
 
@@ -25,8 +25,7 @@ export const runAllSeeders = async (
   const regularUsers = await seedUsers(db)
 
   // 2. Seed federations (independent, but needed before orgs)
-  const { federations, federationClubs: initialFederationClubs } =
-    await seedFederations(db, [])
+  const { federations } = await seedFederations(db, [])
 
   // 3. Seed federation users (depends on federations)
   const federationUsers = await seedFederationUsers(db, federations)
@@ -35,10 +34,7 @@ export const runAllSeeders = async (
   const championships = await seedChampionships(db, federations)
 
   // 5. Seed championship editions (depends on championships)
-  const championshipEditions = await seedChampionshipEditions(
-    db,
-    championships
-  )
+  const championshipEditions = await seedChampionshipEditions(db, championships)
 
   // 6. Combine all users
   const users = [...regularUsers, ...federationUsers]
@@ -47,7 +43,7 @@ export const runAllSeeders = async (
   const { organizations, members } = await seedOrganizations(
     db,
     users,
-    federations
+    federations,
   )
 
   // 8. Update federation clubs links now that we have organizations
@@ -64,7 +60,7 @@ export const runAllSeeders = async (
     db,
     organizations,
     players,
-    coaches
+    coaches,
   )
 
   // 12. Seed tests and results (depends on organizations, players)
@@ -94,7 +90,7 @@ export const runAllSeeders = async (
 }
 
 export const generateSeedDataOutput = (
-  context: SeederContext
+  context: SeederContext,
 ): SeedDataOutput => {
   const {
     users,
@@ -180,12 +176,12 @@ export const generateSeedDataOutput = (
           role: m.role,
         })),
       }
-    }
+    },
   )
 
   return {
     generatedAt: new Date().toISOString(),
-    password: 'Test@1234',
+    password: process.env.SEEDER_PASSWORD!,
     users: users.map((u) => ({
       id: u.id,
       email: u.email,

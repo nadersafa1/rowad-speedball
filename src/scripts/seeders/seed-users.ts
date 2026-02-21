@@ -4,7 +4,7 @@ import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { user, account } from '@/db/schema'
 import type { SeededUser } from './types'
 
-const PASSWORD = 'Test@1234'
+const PASSWORD = process.env.SEEDER_PASSWORD!
 
 // Scrypt config matching better-auth's implementation
 const scryptConfig = {
@@ -40,9 +40,7 @@ const regularUsers = Array.from({ length: 22 }, (_, i) => ({
   email: `user${i + 1}@example.com`,
 }))
 
-export const seedUsers = async (
-  db: NodePgDatabase
-): Promise<SeededUser[]> => {
+export const seedUsers = async (db: NodePgDatabase): Promise<SeededUser[]> => {
   console.log('🌱 Seeding users...')
 
   const hashedPassword = await hashPassword(PASSWORD)
