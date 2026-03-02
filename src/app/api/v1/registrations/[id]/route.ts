@@ -11,6 +11,7 @@ import { getOrganizationContext } from '@/lib/organization-helpers'
 import {
   checkEventUpdateAuthorization,
   checkEventDeleteAuthorization,
+  checkRegistrationDeleteAuthorization,
 } from '@/lib/authorization'
 import {
   addPlayersToRegistration,
@@ -263,7 +264,11 @@ export async function DELETE(
     }
 
     // Check authorization based on parent event
-    const authError = checkEventDeleteAuthorization(context, event[0])
+    // Exception: Coaches CAN delete registrations for events that are children of a session
+    const eventData = event[0]
+    const authError = eventData.trainingSessionId
+      ? checkRegistrationDeleteAuthorization(context, eventData)
+      : checkEventDeleteAuthorization(context, eventData)
     if (authError) {
       return authError
     }

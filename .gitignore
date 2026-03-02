@@ -5,3 +5,5 @@ dist
 *.tsbuildinfo
 .cursor
 .vscode
+.claude
+.DS_Store

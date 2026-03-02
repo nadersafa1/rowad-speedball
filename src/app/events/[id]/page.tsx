@@ -8,6 +8,7 @@ import { useGroupsStore } from '@/store/groups-store'
 import { useRegistrationsStore } from '@/store/registrations-store'
 import { useMatchesStore } from '@/store/matches-store'
 import { useEventPermissions } from '@/hooks/authorization/use-event-permissions'
+import { useOrganizationContext } from '@/hooks/authorization/use-organization-context'
 import GroupManagement from '@/components/events/group-management'
 import BracketSeeding from '@/components/events/bracket-seeding'
 import HeatManagement from '@/components/events/heat-management'
@@ -63,6 +64,15 @@ const EventDetailPage = () => {
   } = useRegistrationsStore()
   const { matches, fetchMatches } = useMatchesStore()
   const { canUpdate, canDelete, canCreate } = useEventPermissions(selectedEvent)
+  const { context } = useOrganizationContext()
+
+  // Coaches can only delete registrations for session-child events
+  const canDeleteRegistration = useMemo(() => {
+    if (!selectedEvent) return false
+    if (context.isSystemAdmin || context.isAdmin || context.isOwner) return canDelete
+    if (context.isCoach && selectedEvent.trainingSessionId) return canDelete
+    return false
+  }, [selectedEvent, canDelete, context])
 
   // Update activeTab when URL changes
   useEffect(() => {
@@ -179,24 +189,24 @@ const EventDetailPage = () => {
         actionButtons={[
           ...(canUpdate
             ? [
-                {
-                  label: 'Edit Event',
-                  icon: Edit,
-                  buttonClassName: 'gap-2',
-                  onClick: dialogs.openEventForm,
-                },
-              ]
+              {
+                label: 'Edit Event',
+                icon: Edit,
+                buttonClassName: 'gap-2',
+                onClick: dialogs.openEventForm,
+              },
+            ]
             : []),
           ...(canDelete
             ? [
-                {
-                  label: 'Delete Event',
-                  icon: Trash2,
-                  buttonClassName:
-                    'gap-2 text-destructive hover:text-destructive',
-                  onClick: dialogs.openDeleteEvent,
-                },
-              ]
+              {
+                label: 'Delete Event',
+                icon: Trash2,
+                buttonClassName:
+                  'gap-2 text-destructive hover:text-destructive',
+                onClick: dialogs.openDeleteEvent,
+              },
+            ]
             : []),
         ]}
       />
@@ -246,7 +256,7 @@ const EventDetailPage = () => {
             registrations={registrations}
             canCreate={canCreate}
             canUpdate={canUpdate}
-            canDelete={canDelete}
+            canDelete={canDeleteRegistration}
             onAddRegistration={() => dialogs.openRegistrationForm()}
             onEditRegistration={(id) => dialogs.openRegistrationForm(id)}
             onDeleteRegistration={dialogs.openDeleteRegistration}
@@ -319,7 +329,7 @@ const EventDetailPage = () => {
             registrations={registrations}
             groups={groups}
             canUpdate={canUpdate}
-            canDelete={canDelete}
+            canDelete={canDeleteRegistration}
             onUpdateScores={handleUpdateScores}
             onDeleteRegistration={dialogs.openDeleteRegistration}
             onGenerateHeats={handleGenerateHeats}
