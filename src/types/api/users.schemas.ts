@@ -26,7 +26,7 @@ export type UsersQuery = z.infer<typeof usersQuerySchema>
 export const updateUserFederationRoleSchema = z
   .object({
     role: z.enum(['federation-admin', 'federation-editor']).nullable(),
-    federationId: z.string().uuid().nullable(),
+    federationId: z.uuid().nullable(),
   })
   .refine(
     (data) =>
@@ -34,7 +34,7 @@ export const updateUserFederationRoleSchema = z
       (data.role !== null && data.federationId !== null),
     {
       message: 'Role and federationId must both be set or both be null',
-    }
+    },
   )
 
 export type UpdateUserFederationRoleInput = z.infer<

@@ -21,9 +21,13 @@ import { usePlayersStore } from '@/store/players-store'
 import { Edit, Trash2 } from 'lucide-react'
 import { useParams, useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import PlayerNotesTab from './components/player-notes-tab'
-import PlayerOverviewTab from './components/player-overview-tab'
+import PlayerProfileCard from './components/player-profile-card'
+import PlayerStatsTab from './components/player-stats-tab'
+import PlayerTestsTab from './components/player-tests-tab'
+import RecentMatchesCard from './components/recent-matches-card'
 
 const PlayerDetailPage = () => {
   const params = useParams()
@@ -44,15 +48,18 @@ const PlayerDetailPage = () => {
   }, [playerId, fetchPlayer])
 
   useEffect(() => {
+    let isMounted = true
+
     const fetchUserImage = async () => {
       if (selectedPlayer?.userId) {
+        setUserImage(null)
         try {
           const user = await apiClient.getUser(selectedPlayer.userId)
-          if (user?.image) {
+          if (isMounted && user?.image) {
             setUserImage(user.image)
           }
         } catch (error) {
-          // Silently fail - user image is optional
+          if (!isMounted) return
           console.error('Failed to fetch user image:', error)
         }
       } else {
@@ -62,6 +69,10 @@ const PlayerDetailPage = () => {
 
     if (selectedPlayer) {
       fetchUserImage()
+    }
+
+    return () => {
+      isMounted = false
     }
   }, [selectedPlayer])
 
@@ -157,20 +168,36 @@ const PlayerDetailPage = () => {
         }
       />
 
-      {/* Tabs for Overview and Notes */}
-      <Tabs defaultValue='overview' className='w-full'>
-        {canReadNotes && (
-          <TabsList className='grid w-full grid-cols-2 mb-6'>
-            <TabsTrigger value='overview'>Overview</TabsTrigger>
-            <TabsTrigger value='notes'>Notes</TabsTrigger>
-          </TabsList>
-        )}
+      <PlayerProfileCard
+        selectedPlayer={selectedPlayer}
+        userImage={userImage}
+      />
 
-        <TabsContent value='overview'>
-          <PlayerOverviewTab
+      <Tabs defaultValue='stats' className='w-full mt-6'>
+        <TabsList
+          className={cn(
+            'grid w-full mb-6',
+            canReadNotes ? 'grid-cols-4' : 'grid-cols-3'
+          )}
+        >
+          <TabsTrigger value='stats'>Stats</TabsTrigger>
+          <TabsTrigger value='matches'>Matches</TabsTrigger>
+          <TabsTrigger value='tests'>Tests</TabsTrigger>
+          {canReadNotes && <TabsTrigger value='notes'>Notes</TabsTrigger>}
+        </TabsList>
+
+        <TabsContent value='stats'>
+          <PlayerStatsTab selectedPlayer={selectedPlayer} />
+        </TabsContent>
+
+        <TabsContent value='matches'>
+          <RecentMatchesCard playerId={playerId} />
+        </TabsContent>
+
+        <TabsContent value='tests'>
+          <PlayerTestsTab
             selectedPlayer={selectedPlayer}
             playerId={playerId}
-            userImage={userImage}
             onResultAdded={() => fetchPlayer(playerId)}
           />
         </TabsContent>
