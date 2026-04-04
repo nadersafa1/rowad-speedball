@@ -6,11 +6,12 @@ import type { EventFormat } from '@/types/event-format'
 import type { TeamLevel } from '@/types/team-level'
 import { Season } from '@/db/schema'
 import type { UsersGetData } from '@/types/api/users.schemas'
+import type { DashboardResultsResponse } from '@/types/api/results.schemas'
 import { SortOrder } from '@/types'
 import { UserRoles, UsersSortBy } from '@/app/admin/users/types'
 
 export class ApiClient {
-  private baseUrl: string
+  private readonly baseUrl: string
 
   constructor(baseUrl?: string) {
     // Use relative path since API is on the same server now
@@ -19,7 +20,7 @@ export class ApiClient {
 
   private async request<T>(
     endpoint: string,
-    options?: RequestInit
+    options?: RequestInit,
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`
 
@@ -96,7 +97,7 @@ export class ApiClient {
       limit?: number
       unassigned?: string | boolean
     },
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ): Promise<PaginatedResponse<any>> {
     const searchParams = new URLSearchParams()
     if (params?.q) searchParams.set('q', params.q)
@@ -126,14 +127,14 @@ export class ApiClient {
         'unassigned',
         typeof params.unassigned === 'boolean'
           ? params.unassigned.toString()
-          : params.unassigned
+          : params.unassigned,
       )
     }
 
     const query = searchParams.toString()
     return this.request<PaginatedResponse<any>>(
       `/players${query ? `?${query}` : ''}`,
-      { signal }
+      { signal },
     )
   }
 
@@ -143,7 +144,7 @@ export class ApiClient {
 
   async getPlayerMatches(
     playerId: string,
-    params?: { page?: number; limit?: number }
+    params?: { page?: number; limit?: number },
   ) {
     const searchParams = new URLSearchParams()
     if (params?.page) searchParams.set('page', params.page.toString())
@@ -151,7 +152,7 @@ export class ApiClient {
 
     const query = searchParams.toString()
     return this.request(
-      `/players/${playerId}/matches${query ? `?${query}` : ''}`
+      `/players/${playerId}/matches${query ? `?${query}` : ''}`,
     )
   }
 
@@ -186,7 +187,7 @@ export class ApiClient {
       sortOrder?: 'asc' | 'desc'
       page?: number
       limit?: number
-    }
+    },
   ): Promise<PaginatedResponse<any>> {
     const searchParams = new URLSearchParams()
     if (params?.noteType) searchParams.set('noteType', params.noteType)
@@ -196,7 +197,7 @@ export class ApiClient {
 
     const query = searchParams.toString()
     return this.request<PaginatedResponse<any>>(
-      `/players/${playerId}/notes${query ? `?${query}` : ''}`
+      `/players/${playerId}/notes${query ? `?${query}` : ''}`,
     )
   }
 
@@ -205,7 +206,7 @@ export class ApiClient {
     data: {
       content: string
       noteType: 'performance' | 'medical' | 'behavioral' | 'general'
-    }
+    },
   ) {
     return this.request(`/players/${playerId}/notes`, {
       method: 'POST',
@@ -219,7 +220,7 @@ export class ApiClient {
     data: {
       content?: string
       noteType?: 'performance' | 'medical' | 'behavioral' | 'general'
-    }
+    },
   ) {
     return this.request(`/players/${playerId}/notes/${noteId}`, {
       method: 'PATCH',
@@ -253,7 +254,7 @@ export class ApiClient {
 
     const query = searchParams.toString()
     return this.request<PaginatedResponse<any>>(
-      `/federations${query ? `?${query}` : ''}`
+      `/federations${query ? `?${query}` : ''}`,
     )
   }
 
@@ -305,7 +306,7 @@ export class ApiClient {
 
     const query = searchParams.toString()
     return this.request<PaginatedResponse<any>>(
-      `/federation-clubs${query ? `?${query}` : ''}`
+      `/federation-clubs${query ? `?${query}` : ''}`,
     )
   }
 
@@ -335,7 +336,7 @@ export class ApiClient {
 
     const query = searchParams.toString()
     return this.request<PaginatedResponse<any>>(
-      `/championships${query ? `?${query}` : ''}`
+      `/championships${query ? `?${query}` : ''}`,
     )
   }
 
@@ -388,7 +389,7 @@ export class ApiClient {
 
     const query = searchParams.toString()
     return this.request<PaginatedResponse<any>>(
-      `/championship-editions${query ? `?${query}` : ''}`
+      `/championship-editions${query ? `?${query}` : ''}`,
     )
   }
 
@@ -454,7 +455,7 @@ export class ApiClient {
 
     const query = searchParams.toString()
     return this.request<PaginatedResponse<any>>(
-      `/tests${query ? `?${query}` : ''}`
+      `/tests${query ? `?${query}` : ''}`,
     )
   }
 
@@ -511,7 +512,7 @@ export class ApiClient {
 
     const query = searchParams.toString()
     return this.request<PaginatedResponse<any>>(
-      `/results${query ? `?${query}` : ''}`
+      `/results${query ? `?${query}` : ''}`,
     )
   }
 
@@ -541,6 +542,23 @@ export class ApiClient {
     return this.request(`/results/${id}`, {
       method: 'DELETE',
     })
+  }
+
+  async getDashboardResults(params: {
+    testIds: string[]
+    q?: string
+    gender?: string
+    ageGroup?: string
+  }): Promise<DashboardResultsResponse> {
+    const searchParams = new URLSearchParams()
+    searchParams.set('testIds', params.testIds.join(','))
+    if (params.q) searchParams.set('q', params.q)
+    if (params.gender) searchParams.set('gender', params.gender)
+    if (params.ageGroup) searchParams.set('ageGroup', params.ageGroup)
+
+    return this.request<DashboardResultsResponse>(
+      `/results/dashboard?${searchParams.toString()}`,
+    )
   }
 
   // ========================================
@@ -596,7 +614,7 @@ export class ApiClient {
 
     const query = searchParams.toString()
     return this.request<PaginatedResponse<any>>(
-      `/events${query ? `?${query}` : ''}`
+      `/events${query ? `?${query}` : ''}`,
     )
   }
 
@@ -630,7 +648,7 @@ export class ApiClient {
 
   async generateBracket(
     eventId: string,
-    seeds?: Array<{ registrationId: string; seed: number }>
+    seeds?: Array<{ registrationId: string; seed: number }>,
   ) {
     return this.request(`/events/${eventId}/generate-bracket`, {
       method: 'POST',
@@ -654,7 +672,7 @@ export class ApiClient {
       playersPerHeat?: number
       shuffleRegistrations?: boolean
       seeds?: Array<{ registrationId: string; seed: number }>
-    }
+    },
   ) {
     return this.request(`/events/${eventId}/generate-heats`, {
       method: 'POST',
@@ -704,7 +722,7 @@ export class ApiClient {
       sortOrder?: 'asc' | 'desc'
       page?: number
       limit?: number
-    }
+    },
   ): Promise<PaginatedResponse<any>> {
     const searchParams = new URLSearchParams()
     if (eventId) searchParams.set('eventId', eventId)
@@ -724,7 +742,7 @@ export class ApiClient {
 
     const query = searchParams.toString()
     return this.request<PaginatedResponse<any>>(
-      `/registrations${query ? `?${query}` : ''}`
+      `/registrations${query ? `?${query}` : ''}`,
     )
   }
 
@@ -761,7 +779,7 @@ export class ApiClient {
     payload: {
       playerId: string
       positionScores: Record<string, number | null>
-    }
+    },
   ) {
     return this.request(`/registrations/${registrationId}/scores`, {
       method: 'PATCH',
@@ -774,7 +792,7 @@ export class ApiClient {
     updates: {
       playerId: string
       positionScores: Record<string, number | null>
-    }[]
+    }[],
   ) {
     return this.request(`/registrations/${registrationId}/scores`, {
       method: 'PATCH',
@@ -812,7 +830,7 @@ export class ApiClient {
 
     const query = searchParams.toString()
     return this.request<PaginatedResponse<any>>(
-      `/matches${query ? `?${query}` : ''}`
+      `/matches${query ? `?${query}` : ''}`,
     )
   }
 
@@ -893,19 +911,19 @@ export class ApiClient {
         'unassigned',
         typeof params.unassigned === 'boolean'
           ? params.unassigned.toString()
-          : params.unassigned
+          : params.unassigned,
       )
     }
     if (params?.organizationId !== undefined) {
       searchParams.set(
         'organizationId',
-        params.organizationId === null ? 'null' : params.organizationId
+        params.organizationId === null ? 'null' : params.organizationId,
       )
     }
 
     const query = searchParams.toString()
     return this.request<PaginatedResponse<any>>(
-      `/coaches${query ? `?${query}` : ''}`
+      `/coaches${query ? `?${query}` : ''}`,
     )
   }
 
@@ -960,7 +978,7 @@ export class ApiClient {
     if (params?.organizationId !== undefined) {
       searchParams.set(
         'organizationId',
-        params.organizationId === null ? 'null' : params.organizationId
+        params.organizationId === null ? 'null' : params.organizationId,
       )
     }
     if (params?.sortBy) searchParams.set('sortBy', params.sortBy)
@@ -970,7 +988,7 @@ export class ApiClient {
 
     const query = searchParams.toString()
     return this.request<PaginatedResponse<any>>(
-      `/training-sessions${query ? `?${query}` : ''}`
+      `/training-sessions${query ? `?${query}` : ''}`,
     )
   }
 
@@ -1008,31 +1026,31 @@ export class ApiClient {
 
   async getTrainingSessionAttendanceRecord(
     sessionId: string,
-    playerId: string
+    playerId: string,
   ) {
     return this.request(
-      `/training-sessions/${sessionId}/attendance/${playerId}`
+      `/training-sessions/${sessionId}/attendance/${playerId}`,
     )
   }
 
   async updateAttendanceStatus(
     sessionId: string,
     playerId: string,
-    status: string
+    status: string,
   ) {
     return this.request(
       `/training-sessions/${sessionId}/attendance/${playerId}`,
       {
         method: 'PATCH',
         body: JSON.stringify({ status }),
-      }
+      },
     )
   }
 
   async createAttendanceRecord(
     sessionId: string,
     playerId: string,
-    status: string = 'pending'
+    status: string = 'pending',
   ) {
     return this.request(`/training-sessions/${sessionId}/attendance`, {
       method: 'POST',
@@ -1045,13 +1063,13 @@ export class ApiClient {
       `/training-sessions/${sessionId}/attendance/${playerId}`,
       {
         method: 'DELETE',
-      }
+      },
     )
   }
 
   async bulkUpdateAttendanceStatus(
     sessionId: string,
-    updates: Array<{ playerId: string; status: string }>
+    updates: Array<{ playerId: string; status: string }>,
   ) {
     return this.request(`/training-sessions/${sessionId}/attendance/bulk`, {
       method: 'PATCH',
@@ -1119,12 +1137,12 @@ export class ApiClient {
         'unassigned',
         typeof params.unassigned === 'boolean'
           ? params.unassigned.toString()
-          : params.unassigned
+          : params.unassigned,
       )
     }
 
     return this.request<PaginatedResponse<UsersGetData>>(
-      `/users?${searchParams.toString()}`
+      `/users?${searchParams.toString()}`,
     )
   }
 
@@ -1134,7 +1152,7 @@ export class ApiClient {
 
   async updateUserFederationRole(
     userId: string,
-    data: { role: string | null; federationId: string | null }
+    data: { role: string | null; federationId: string | null },
   ): Promise<any> {
     return this.request(`/users/${userId}/federation-role`, {
       method: 'PATCH',
@@ -1243,7 +1261,7 @@ export class ApiClient {
   }
 
   async getOrganization(
-    id: string
+    id: string,
   ): Promise<{ id: string; name: string; slug: string; createdAt?: Date }> {
     return this.request<{
       id: string
@@ -1255,7 +1273,7 @@ export class ApiClient {
 
   async updateOrganization(
     id: string,
-    data: { name?: string; slug?: string }
+    data: { name?: string; slug?: string },
   ): Promise<{ id: string; name: string; slug: string; createdAt?: Date }> {
     return this.request<{
       id: string
@@ -1300,12 +1318,12 @@ export class ApiClient {
       page?: number
       limit?: number
     },
-    signal?: AbortSignal
+    signal?: AbortSignal,
   ): Promise<PaginatedResponse<any>> {
     const query = new URLSearchParams(
       Object.entries(params || {})
         .filter(([_, v]) => v !== undefined && v !== null)
-        .map(([k, v]) => [k, String(v)])
+        .map(([k, v]) => [k, String(v)]),
     ).toString()
 
     const endpoint = query ? `/placement-tiers?${query}` : '/placement-tiers'
@@ -1336,7 +1354,7 @@ export class ApiClient {
       displayName?: string | null
       description?: string | null
       rank?: number
-    }
+    },
   ): Promise<any> {
     return this.request<any>(`/placement-tiers/${id}`, {
       method: 'PATCH',
@@ -1364,7 +1382,7 @@ export class ApiClient {
     const query = new URLSearchParams(
       Object.entries(params || {})
         .filter(([_, v]) => v !== undefined && v !== null)
-        .map(([k, v]) => [k, String(v)])
+        .map(([k, v]) => [k, String(v)]),
     ).toString()
 
     const endpoint = query ? `/points-schemas?${query}` : '/points-schemas'
@@ -1391,7 +1409,7 @@ export class ApiClient {
     data: {
       name?: string
       description?: string | null
-    }
+    },
   ): Promise<any> {
     return this.request<any>(`/points-schemas/${id}`, {
       method: 'PATCH',
@@ -1420,7 +1438,7 @@ export class ApiClient {
     const query = new URLSearchParams(
       Object.entries(params || {})
         .filter(([_, v]) => v !== undefined && v !== null)
-        .map(([k, v]) => [k, String(v)])
+        .map(([k, v]) => [k, String(v)]),
     ).toString()
 
     const endpoint = query
@@ -1449,7 +1467,7 @@ export class ApiClient {
     id: string,
     data: {
       points?: number
-    }
+    },
   ): Promise<any> {
     return this.request<any>(`/points-schema-entries/${id}`, {
       method: 'PATCH',
@@ -1489,7 +1507,7 @@ export class ApiClient {
 
     const query = searchParams.toString()
     return this.request<PaginatedResponse<any>>(
-      `/federation-club-requests${query ? `?${query}` : ''}`
+      `/federation-club-requests${query ? `?${query}` : ''}`,
     )
   }
 
@@ -1507,7 +1525,7 @@ export class ApiClient {
     data: {
       status: 'approved' | 'rejected'
       rejectionReason?: string
-    }
+    },
   ): Promise<any> {
     return this.request<any>(`/federation-club-requests/${id}`, {
       method: 'PATCH',
@@ -1551,7 +1569,7 @@ export class ApiClient {
 
     const query = searchParams.toString()
     return this.request<PaginatedResponse<Season>>(
-      `/seasons${query ? `?${query}` : ''}`
+      `/seasons${query ? `?${query}` : ''}`,
     )
   }
 
@@ -1595,7 +1613,7 @@ export class ApiClient {
 
     const query = searchParams.toString()
     return this.request<{ data: any[] }>(
-      `/season-age-groups${query ? `?${query}` : ''}`
+      `/season-age-groups${query ? `?${query}` : ''}`,
     )
   }
 
@@ -1661,7 +1679,7 @@ export class ApiClient {
 
     const query = searchParams.toString()
     return this.request<PaginatedResponse<any>>(
-      `/season-player-registrations${query ? `?${query}` : ''}`
+      `/season-player-registrations${query ? `?${query}` : ''}`,
     )
   }
 
@@ -1700,7 +1718,7 @@ export class ApiClient {
 
   async updateSeasonPlayerRegistrationStatus(
     id: string,
-    data: any
+    data: any,
   ): Promise<any> {
     return this.request<any>(`/season-player-registrations/${id}`, {
       method: 'PATCH',
@@ -1710,7 +1728,7 @@ export class ApiClient {
 
   async approveSeasonPlayerRegistration(
     id: string,
-    data: { federationIdNumber?: string | null }
+    data: { federationIdNumber?: string | null },
   ): Promise<any> {
     return this.request<any>(`/season-player-registrations/${id}/approve`, {
       method: 'PUT',
@@ -1720,7 +1738,7 @@ export class ApiClient {
 
   async rejectSeasonPlayerRegistration(
     id: string,
-    data: { rejectionReason: string }
+    data: { rejectionReason: string },
   ): Promise<any> {
     return this.request<any>(`/season-player-registrations/${id}/reject`, {
       method: 'PUT',
@@ -1765,7 +1783,7 @@ export class ApiClient {
 
     const query = searchParams.toString()
     return this.request<PaginatedResponse<any>>(
-      `/federation-members${query ? `?${query}` : ''}`
+      `/federation-members${query ? `?${query}` : ''}`,
     )
   }
 

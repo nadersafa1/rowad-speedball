@@ -111,7 +111,7 @@ export const auth = betterAuth({
               // Log error but don't fail user creation
               console.error(
                 'Error adding new admin to all organizations:',
-                error
+                error,
               )
             }
           }
@@ -130,7 +130,7 @@ export const auth = betterAuth({
               // Log error but don't fail user update
               console.error(
                 'Error adding updated admin to all organizations:',
-                error
+                error,
               )
             }
           }
@@ -190,7 +190,7 @@ export const auth = betterAuth({
             // Filter out the creator (already added) and any admins already in the org
             const existingMemberIds = new Set([member.userId])
             const adminsToAdd = appAdminIds.filter(
-              (adminId) => !existingMemberIds.has(adminId)
+              (adminId) => !existingMemberIds.has(adminId),
             )
 
             if (adminsToAdd.length > 0) {

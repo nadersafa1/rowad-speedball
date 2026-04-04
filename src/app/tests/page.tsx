@@ -5,7 +5,8 @@ import { PageHeader } from '@/components/ui'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useTestPermissions } from '@/hooks/authorization/use-test-permissions'
-import { Plus, Table2 } from 'lucide-react'
+import { BarChart3, Plus, Table2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { type DateRange } from 'react-day-picker'
 import TestsStats from './components/tests-stats'
@@ -14,6 +15,7 @@ import { useTests } from './hooks/use-tests'
 import { TestsFilters } from './types'
 
 const TestsPage = () => {
+  const router = useRouter()
   const { canCreate } = useTestPermissions(null)
 
   const [testFormOpen, setTestFormOpen] = useState(false)
@@ -100,10 +102,6 @@ const TestsPage = () => {
     setFilters(newFilters)
   }
 
-  const handleRefetch = () => {
-    refetch()
-  }
-
   if (error) {
     return (
       <div className='container mx-auto px-2 sm:px-4 md:px-6 py-4 sm:py-8'>
@@ -125,6 +123,13 @@ const TestsPage = () => {
         icon={Table2}
         title='Tests'
         description='Browse and manage all conducted speedball tests'
+        actionButtons={[
+          {
+            label: 'Dashboard',
+            icon: BarChart3,
+            onClick: () => router.push('/tests/dashboard'),
+          },
+        ]}
         actionDialogs={
           canCreate
             ? [
@@ -141,7 +146,7 @@ const TestsPage = () => {
                     <TestForm
                       onSuccess={() => {
                         setTestFormOpen(false)
-                        handleRefetch()
+                        refetch()
                       }}
                       onCancel={() => setTestFormOpen(false)}
                     />
@@ -178,7 +183,7 @@ const TestsPage = () => {
             sortOrder={filters.sortOrder}
             onSortingChange={handleSortingChange}
             isLoading={isLoading}
-            onRefetch={handleRefetch}
+            onRefetch={refetch}
           />
         </CardContent>
       </Card>

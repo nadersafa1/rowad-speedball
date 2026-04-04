@@ -1,14 +1,83 @@
 import { z } from 'zod'
-import {
-  uuidSchema,
-  genderSchema,
-  nonNegativeIntSchema,
-} from '@/lib/forms/patterns'
+import { uuidSchema, nonNegativeIntSchema } from '@/lib/forms/patterns'
 import {
   standardTextSearchSchema,
   standardPaginationSchema,
   standardSortSchema,
 } from '@/lib/api-helpers/query-builders'
+
+// Shared enums reused across results-related endpoints
+export const genderFilterEnum = z.enum(['male', 'female', 'all'])
+export const ageGroupFilterEnum = z.enum([
+  'mini',
+  'U-09',
+  'U-11',
+  'U-13',
+  'U-15',
+  'U-17',
+  'U-19',
+  'U-21',
+  'Seniors',
+  'all',
+])
+
+// ========================================
+// Dashboard endpoint schemas & types
+// ========================================
+
+export const dashboardQuerySchema = z.object({
+  testIds: z
+    .string()
+    .min(1, 'At least one test ID is required')
+    .transform((val) => val.split(',').map((id) => id.trim()))
+    .pipe(z.array(uuidSchema).min(1).max(20)),
+  q: z.string().optional(),
+  gender: genderFilterEnum.optional(),
+  ageGroup: ageGroupFilterEnum.optional(),
+})
+
+export type DashboardQuery = z.infer<typeof dashboardQuerySchema>
+
+/** A single test result within a player's dashboard data */
+export interface DashboardPlayerResult {
+  testId: string
+  testName: string
+  testDate: string
+  leftHandScore: number
+  rightHandScore: number
+  forehandScore: number
+  backhandScore: number
+  totalScore: number
+}
+
+/** A player with their results across selected tests */
+export interface DashboardPlayer {
+  id: string
+  name: string
+  ageGroup: string
+  gender: string
+  results: DashboardPlayerResult[]
+}
+
+/** Test metadata returned alongside dashboard results */
+export interface DashboardTest {
+  id: string
+  name: string
+  dateConducted: string
+  playingTime: number
+  recoveryTime: number
+}
+
+/** Response shape for GET /api/v1/results/dashboard */
+export interface DashboardResultsResponse {
+  players: DashboardPlayer[]
+  tests: DashboardTest[]
+}
+
+// ========================================
+// Results list endpoint schemas
+// ========================================
+
 // Query parameters for GET /results
 export const resultsQuerySchema = z
   .object({
@@ -17,58 +86,45 @@ export const resultsQuerySchema = z
     ...standardSortSchema.shape,
     playerId: uuidSchema.optional(),
     testId: uuidSchema.optional(),
-    gender: z.enum(['male', 'female', 'all']).optional(),
-    ageGroup: z
-      .enum([
-        'mini',
-        'U-09',
-        'U-11',
-        'U-13',
-        'U-15',
-        'U-17',
-        'U-19',
-        'U-21',
-        'Seniors',
-        'all',
-      ])
-      .optional(),
+    gender: genderFilterEnum.optional(),
+    ageGroup: ageGroupFilterEnum.optional(),
     yearOfBirth: z
       .string()
       .optional()
-      .transform((val) => (val ? parseInt(val, 10) : undefined))
+      .transform((val) => (val ? Number.parseInt(val, 10) : undefined))
       .refine(
         (val) => val === undefined || (val >= 1900 && val <= 2100),
-        'Year of birth must be between 1900 and 2100'
+        'Year of birth must be between 1900 and 2100',
       ),
     minScore: z
       .string()
       .optional()
-      .transform((val) => (val ? parseInt(val, 10) : undefined))
+      .transform((val) => (val ? Number.parseInt(val, 10) : undefined))
       .refine(
         (val) => val === undefined || val >= 0,
-        'Minimum score must be non-negative'
+        'Minimum score must be non-negative',
       ),
     maxScore: z
       .string()
       .optional()
-      .transform((val) => (val ? parseInt(val, 10) : undefined))
+      .transform((val) => (val ? Number.parseInt(val, 10) : undefined))
       .refine(
         (val) => val === undefined || val >= 0,
-        'Maximum score must be non-negative'
+        'Maximum score must be non-negative',
       ),
     dateFrom: z
       .string()
       .optional()
       .refine(
-        (date) => !date || !isNaN(Date.parse(date)),
-        'Invalid date format for dateFrom'
+        (date) => !date || !Number.isNaN(Date.parse(date)),
+        'Invalid date format for dateFrom',
       ),
     dateTo: z
       .string()
       .optional()
       .refine(
-        (date) => !date || !isNaN(Date.parse(date)),
-        'Invalid date format for dateTo'
+        (date) => !date || !Number.isNaN(Date.parse(date)),
+        'Invalid date format for dateTo',
       ),
     // Sorting parameters
     sortBy: z
@@ -105,19 +161,19 @@ export const resultsCreateSchema = z
     testId: uuidSchema,
     leftHandScore: nonNegativeIntSchema('Left hand score').max(
       999,
-      'Left hand score cannot exceed 999'
+      'Left hand score cannot exceed 999',
     ),
     rightHandScore: nonNegativeIntSchema('Right hand score').max(
       999,
-      'Right hand score cannot exceed 999'
+      'Right hand score cannot exceed 999',
     ),
     forehandScore: nonNegativeIntSchema('Forehand score').max(
       999,
-      'Forehand score cannot exceed 999'
+      'Forehand score cannot exceed 999',
     ),
     backhandScore: nonNegativeIntSchema('Backhand score').max(
       999,
-      'Backhand score cannot exceed 999'
+      'Backhand score cannot exceed 999',
     ),
   })
   .strict()
@@ -140,7 +196,7 @@ export const resultsUpdateSchema = z
   })
   .refine(
     (data) => Object.keys(data).length > 0,
-    'At least one field must be provided for update'
+    'At least one field must be provided for update',
   )
   .strict()
 
