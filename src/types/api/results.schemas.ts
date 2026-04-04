@@ -21,6 +21,23 @@ export const ageGroupFilterEnum = z.enum([
   'all',
 ])
 
+/** Concrete age groups for dashboard multi-filter (excludes sentinel `all`) */
+export const dashboardAgeGroupValues = [
+  'mini',
+  'U-09',
+  'U-11',
+  'U-13',
+  'U-15',
+  'U-17',
+  'U-19',
+  'U-21',
+  'Seniors',
+] as const
+
+export type DashboardAgeGroupValue = (typeof dashboardAgeGroupValues)[number]
+
+export const dashboardAgeGroupValueEnum = z.enum(dashboardAgeGroupValues)
+
 // ========================================
 // Dashboard endpoint schemas & types
 // ========================================
@@ -33,7 +50,14 @@ export const dashboardQuerySchema = z.object({
     .pipe(z.array(uuidSchema).min(1).max(20)),
   q: z.string().optional(),
   gender: genderFilterEnum.optional(),
-  ageGroup: ageGroupFilterEnum.optional(),
+  /** Comma-separated list of age groups; empty or omitted means no age filter */
+  ageGroups: z
+    .string()
+    .optional()
+    .transform((val) =>
+      val?.trim() ? val.split(',').map((s) => s.trim()) : [],
+    )
+    .pipe(z.array(dashboardAgeGroupValueEnum).max(9)),
 })
 
 export type DashboardQuery = z.infer<typeof dashboardQuerySchema>

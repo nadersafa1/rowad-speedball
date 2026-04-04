@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import { BarChart3, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { PageHeader } from '@/components/ui'
@@ -10,10 +10,12 @@ import Loading from '@/components/ui/loading'
 import { useRoles } from '@/hooks/authorization/use-roles'
 import { useTestsStore } from '@/store/tests-store'
 import { useTestsDashboardStore } from '@/store/tests-dashboard-store'
+import { useTestsDashboardPageSync } from './hooks/use-tests-dashboard-page-sync'
 import { computeAggregatedRows } from './utils/aggregation'
 import DashboardFilters from './components/dashboard-filters'
 import DashboardTable from './components/dashboard-table'
 import DashboardCharts from './components/dashboard-charts'
+import PositionTeamTotalCard from './components/position-team-total-card'
 
 export default function TestsDashboardPage() {
   const {
@@ -24,11 +26,7 @@ export default function TestsDashboardPage() {
     isLoading: rolesLoading,
   } = useRoles()
 
-  const {
-    tests: availableTests,
-    fetchTests,
-    isLoading: testsLoading,
-  } = useTestsStore()
+  const { tests: availableTests, isLoading: testsLoading } = useTestsStore()
 
   const {
     selectedTestIds,
@@ -36,27 +34,14 @@ export default function TestsDashboardPage() {
     searchQuery,
     aggregationMode,
     weights,
-    genderFilter,
-    ageGroupFilter,
     players,
     tests: dashboardTests,
     isLoading: dashboardLoading,
     error,
-    fetchDashboardData,
     clearError,
   } = useTestsDashboardStore()
 
-  // Load the list of available tests on mount
-  useEffect(() => {
-    fetchTests({ limit: 100 })
-  }, [fetchTests])
-
-  // Refetch dashboard data when server-side filters change
-  useEffect(() => {
-    if (selectedTestIds.length > 0) {
-      fetchDashboardData()
-    }
-  }, [selectedTestIds, genderFilter, ageGroupFilter, fetchDashboardData])
+  useTestsDashboardPageSync()
 
   // Client-side aggregation: recomputed when players, positions, mode, or search change
   const aggregatedRows = useMemo(
@@ -123,6 +108,8 @@ export default function TestsDashboardPage() {
           availableTests={availableTests}
           isLoadingTests={testsLoading}
         />
+
+        <PositionTeamTotalCard />
 
         <DashboardTable
           rows={aggregatedRows}

@@ -1,6 +1,5 @@
 import { z } from 'zod'
-import { db } from '@/lib/db'
-import { and, inArray, SQL } from 'drizzle-orm'
+import { and, type SQL } from 'drizzle-orm'
 
 /**
  * Standardized pagination schema
@@ -11,12 +10,12 @@ export const standardPaginationSchema = z.object({
   page: z
     .string()
     .optional()
-    .transform((val) => (val ? parseInt(val, 10) : 1))
+    .transform((val) => (val ? Number.parseInt(val, 10) : 1))
     .refine((val) => val >= 1, 'Page must be greater than 0'),
   limit: z
     .string()
     .optional()
-    .transform((val) => (val ? parseInt(val, 10) : 10))
+    .transform((val) => (val ? Number.parseInt(val, 10) : 10))
     .refine((val) => val >= 1 && val <= 100, 'Limit must be between 1 and 100'),
 })
 
@@ -46,11 +45,14 @@ export const standardTextSearchSchema = z.object({
 export const standardDateRangeSchema = z.object({
   dateFrom: z
     .string()
-    .refine((date) => !isNaN(Date.parse(date)), 'Invalid dateFrom format')
+    .refine(
+      (date) => !Number.isNaN(Date.parse(date)),
+      'Invalid dateFrom format',
+    )
     .optional(),
   dateTo: z
     .string()
-    .refine((date) => !isNaN(Date.parse(date)), 'Invalid dateTo format')
+    .refine((date) => !Number.isNaN(Date.parse(date)), 'Invalid dateTo format')
     .optional(),
 })
 
@@ -69,7 +71,7 @@ export const standardOrganizationFilterSchema = z.object({
     .refine(
       (val) =>
         val === undefined || val === null || z.uuid().safeParse(val).success,
-      'Invalid organization ID format'
+      'Invalid organization ID format',
     ),
 })
 
@@ -81,63 +83,14 @@ export function calculateOffset(page: number, limit: number): number {
 }
 
 /**
- * Batch load relationships for multiple entities to avoid N+1 queries
- *
- * @example
- * // Load coaches for multiple training sessions
- * const coachesMap = await batchLoadRelationships(
- *   sessions,
- *   (session) => session.id,
- *   schema.trainingSessionCoaches,
- *   schema.trainingSessionCoaches.trainingSessionId,
- *   {
- *     sessionId: schema.trainingSessionCoaches.trainingSessionId,
- *     coach: schema.coaches,
- *   }
- * )
- */
-export async function batchLoadRelationships<T, K extends string | number, R>(
-  items: T[],
-  getKey: (item: T) => K,
-  table: any,
-  keyField: any,
-  selector: any
-): Promise<Map<K, R[]>> {
-  const keys = items
-    .map(getKey)
-    .filter((key) => key !== null && key !== undefined)
-
-  if (keys.length === 0) {
-    return new Map()
-  }
-
-  const results = await db
-    .select(selector)
-    .from(table)
-    .where(inArray(keyField, keys as any[]))
-
-  // Group results by key
-  const grouped = new Map<K, R[]>()
-  for (const result of results) {
-    const key = result[keyField.name] as K
-    if (!grouped.has(key)) {
-      grouped.set(key, [])
-    }
-    grouped.get(key)!.push(result as R)
-  }
-
-  return grouped
-}
-
-/**
  * Apply standard conditions reducer pattern
  * Combines multiple Drizzle conditions with AND
  */
 export function combineConditions(
-  conditions: (SQL<unknown> | undefined)[]
+  conditions: (SQL<unknown> | undefined)[],
 ): SQL<unknown> | undefined {
   const validConditions = conditions.filter(
-    (c) => c !== undefined
+    (c) => c !== undefined,
   ) as SQL<unknown>[]
 
   if (validConditions.length === 0) {
@@ -146,7 +99,7 @@ export function combineConditions(
 
   return validConditions.reduce<SQL<unknown> | undefined>(
     (acc, condition) => (acc ? and(acc, condition) : condition),
-    undefined
+    undefined,
   )
 }
 

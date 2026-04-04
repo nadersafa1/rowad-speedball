@@ -44,20 +44,17 @@ interface RawResultRow {
  */
 function buildVisibilityCondition(
   isSystemAdmin: boolean,
-  organizationId?: string
+  organizationId?: string,
 ): SQL | undefined {
   if (isSystemAdmin) return undefined
 
   const publicOrUnscoped = or(
     isNull(schema.tests.organizationId),
-    eq(schema.tests.visibility, 'public')
+    eq(schema.tests.visibility, 'public'),
   )
 
   if (organizationId) {
-    return or(
-      publicOrUnscoped,
-      eq(schema.tests.organizationId, organizationId)
-    )
+    return or(publicOrUnscoped, eq(schema.tests.organizationId, organizationId))
   }
 
   return publicOrUnscoped
@@ -70,10 +67,14 @@ function buildVisibilityCondition(
  */
 function groupResultsByPlayer(
   rows: RawResultRow[],
-  ageGroupFilter?: string
+  allowedAgeGroups?: string[],
 ): DashboardPlayer[] {
   const playerMap = new Map<string, DashboardPlayer>()
   const excludedPlayerIds = new Set<string>()
+  const allowedSet =
+    allowedAgeGroups && allowedAgeGroups.length > 0
+      ? new Set(allowedAgeGroups)
+      : null
 
   for (const row of rows) {
     if (!row.playerId || !row.playerName || !row.playerDateOfBirth) continue
@@ -84,11 +85,7 @@ function groupResultsByPlayer(
     if (!player) {
       const playerAgeGroup = getAgeGroup(row.playerDateOfBirth)
 
-      if (
-        ageGroupFilter &&
-        ageGroupFilter !== 'all' &&
-        playerAgeGroup !== ageGroupFilter
-      ) {
+      if (allowedSet && !allowedSet.has(playerAgeGroup)) {
         excludedPlayerIds.add(row.playerId)
         continue
       }
@@ -130,7 +127,7 @@ function groupResultsByPlayer(
  * GET /api/v1/results/dashboard
  *
  * Returns test results grouped by player for a multi-test comparison dashboard.
- * Accepts multiple test IDs and optional filters (search, gender, age group).
+ * Accepts multiple test IDs and optional filters (search, gender, age groups).
  * Both the tests metadata and the joined results are fetched in parallel.
  */
 export async function GET(request: NextRequest) {
@@ -146,7 +143,12 @@ export async function GET(request: NextRequest) {
       return Response.json(z.treeifyError(parseResult.error), { status: 400 })
     }
 
-    const { testIds, q, gender, ageGroup } = parseResult.data
+    const { testIds, q, gender, ageGroups } = parseResult.data
+
+    let effectiveAgeGroups: string[] | undefined
+    if (ageGroups.length > 0) {
+      effectiveAgeGroups = ageGroups
+    }
     const { isSystemAdmin, organization } = context
 
     // --- Build filter conditions for the results query ---
@@ -164,7 +166,7 @@ export async function GET(request: NextRequest) {
 
     const visibilityCondition = buildVisibilityCondition(
       isSystemAdmin,
-      organization?.id
+      organization?.id,
     )
     if (visibilityCondition) {
       conditions.push(visibilityCondition)
@@ -202,17 +204,14 @@ export async function GET(request: NextRequest) {
         .from(schema.testResults)
         .innerJoin(
           schema.players,
-          eq(schema.testResults.playerId, schema.players.id)
+          eq(schema.testResults.playerId, schema.players.id),
         )
-        .innerJoin(
-          schema.tests,
-          eq(schema.testResults.testId, schema.tests.id)
-        )
+        .innerJoin(schema.tests, eq(schema.testResults.testId, schema.tests.id))
         .where(combinedCondition),
     ])
 
     // --- Group flat rows by player, applying age-group filter in-memory ---
-    const players = groupResultsByPlayer(resultsData, ageGroup)
+    const players = groupResultsByPlayer(resultsData, effectiveAgeGroups)
 
     const response: DashboardResultsResponse = {
       players,

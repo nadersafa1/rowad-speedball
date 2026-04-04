@@ -1,12 +1,16 @@
 import { create } from 'zustand'
 import { apiClient } from '@/lib/api-client'
+import { dashboardAgeGroupsForApi } from '@/lib/utils/dashboard-age-groups'
+import {
+  dashboardAgeGroupValues,
+  type DashboardAgeGroupValue,
+  type DashboardPlayer,
+  type DashboardTest,
+} from '@/types/api/results.schemas'
+
 export type {
   DashboardPlayer,
   DashboardPlayerResult,
-  DashboardTest,
-} from '@/types/api/results.schemas'
-import type {
-  DashboardPlayer,
   DashboardTest,
 } from '@/types/api/results.schemas'
 
@@ -20,7 +24,7 @@ interface TestsDashboardState {
   aggregationMode: AggregationMode
   weights: Record<string, number>
   genderFilter: string
-  ageGroupFilter: string
+  ageGroupFilters: DashboardAgeGroupValue[]
 
   players: DashboardPlayer[]
   tests: DashboardTest[]
@@ -34,7 +38,7 @@ interface TestsDashboardState {
   setWeight: (testId: string, weight: number) => void
   setWeights: (weights: Record<string, number>) => void
   setGenderFilter: (gender: string) => void
-  setAgeGroupFilter: (ageGroup: string) => void
+  setAgeGroupFilters: (ageGroups: DashboardAgeGroupValue[]) => void
   fetchDashboardData: () => Promise<void>
   clearError: () => void
   reset: () => void
@@ -55,7 +59,7 @@ export const useTestsDashboardStore = create<TestsDashboardState>(
     aggregationMode: 'average',
     weights: {},
     genderFilter: 'all',
-    ageGroupFilter: 'all',
+    ageGroupFilters: [...dashboardAgeGroupValues],
 
     players: [],
     tests: [],
@@ -65,7 +69,10 @@ export const useTestsDashboardStore = create<TestsDashboardState>(
     setSelectedTestIds: (ids) => {
       const currentWeights = get().weights
       const newWeights: Record<string, number> = {}
-      const equalWeight = ids.length > 0 ? Number.parseFloat((100 / ids.length).toFixed(2)) : 0
+      const equalWeight =
+        ids.length > 0
+          ? Number.parseFloat((100 / ids.length).toFixed(2))
+          : 0
       for (const id of ids) {
         newWeights[id] = currentWeights[id] ?? equalWeight
       }
@@ -83,10 +90,10 @@ export const useTestsDashboardStore = create<TestsDashboardState>(
 
     setWeights: (weights) => set({ weights }),
     setGenderFilter: (gender) => set({ genderFilter: gender }),
-    setAgeGroupFilter: (ageGroup) => set({ ageGroupFilter: ageGroup }),
+    setAgeGroupFilters: (ageGroups) => set({ ageGroupFilters: ageGroups }),
 
     fetchDashboardData: async () => {
-      const { selectedTestIds, genderFilter, ageGroupFilter } = get()
+      const { selectedTestIds, genderFilter, ageGroupFilters } = get()
       if (selectedTestIds.length === 0) {
         set({ players: [], tests: [] })
         return
@@ -97,7 +104,7 @@ export const useTestsDashboardStore = create<TestsDashboardState>(
         const response = await apiClient.getDashboardResults({
           testIds: selectedTestIds,
           gender: genderFilter === 'all' ? undefined : genderFilter,
-          ageGroup: ageGroupFilter === 'all' ? undefined : ageGroupFilter,
+          ageGroups: dashboardAgeGroupsForApi(ageGroupFilters),
         })
         set({
           players: response.players,
@@ -125,7 +132,7 @@ export const useTestsDashboardStore = create<TestsDashboardState>(
         aggregationMode: 'average',
         weights: {},
         genderFilter: 'all',
-        ageGroupFilter: 'all',
+        ageGroupFilters: [...dashboardAgeGroupValues],
         players: [],
         tests: [],
         isLoading: false,

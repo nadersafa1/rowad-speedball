@@ -548,13 +548,16 @@ export class ApiClient {
     testIds: string[]
     q?: string
     gender?: string
-    ageGroup?: string
+    /** When set and non-empty, only these age groups are included */
+    ageGroups?: string[]
   }): Promise<DashboardResultsResponse> {
     const searchParams = new URLSearchParams()
     searchParams.set('testIds', params.testIds.join(','))
     if (params.q) searchParams.set('q', params.q)
     if (params.gender) searchParams.set('gender', params.gender)
-    if (params.ageGroup) searchParams.set('ageGroup', params.ageGroup)
+    if (params.ageGroups && params.ageGroups.length > 0) {
+      searchParams.set('ageGroups', params.ageGroups.join(','))
+    }
 
     return this.request<DashboardResultsResponse>(
       `/results/dashboard?${searchParams.toString()}`,
