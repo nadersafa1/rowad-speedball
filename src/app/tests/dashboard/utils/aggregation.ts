@@ -120,13 +120,24 @@ function aggregateAverage(
   }
 
   const avg = {
-    leftHandScore: Math.round(sums.leftHandScore / totalTestCount),
-    rightHandScore: Math.round(sums.rightHandScore / totalTestCount),
-    forehandScore: Math.round(sums.forehandScore / totalTestCount),
-    backhandScore: Math.round(sums.backhandScore / totalTestCount),
+    leftHandScore: Number.parseFloat(
+      (sums.leftHandScore / totalTestCount).toFixed(2),
+    ),
+    rightHandScore: Number.parseFloat(
+      (sums.rightHandScore / totalTestCount).toFixed(2),
+    ),
+    forehandScore: Number.parseFloat(
+      (sums.forehandScore / totalTestCount).toFixed(2),
+    ),
+    backhandScore: Number.parseFloat(
+      (sums.backhandScore / totalTestCount).toFixed(2),
+    ),
   }
 
-  return { ...avg, totalScore: sumSelectedPositions(avg, positions) }
+  return {
+    ...avg,
+    totalScore: Number.parseFloat(sumSelectedPositions(avg, positions).toFixed(2)),
+  }
 }
 
 function aggregateWeighted(
