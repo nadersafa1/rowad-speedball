@@ -115,6 +115,8 @@ export type Test = {
   recoveryTime: number
   dateConducted: string
   description?: string
+  visibility: 'public' | 'private' | 'coaches-only'
+  organizationId: string | null
   createdAt: string
   updatedAt: string
   // Calculated fields from backend
@@ -236,9 +238,6 @@ export type PlayerWithPositionScores = Player & {
   positionScores?: PositionScores | null
   registrationOrder?: number
 }
-
-// Legacy type alias for backward compatibility
-export type PlayerWithRegistrationPosition = PlayerWithPositionScores
 
 export type Match = {
   id: string

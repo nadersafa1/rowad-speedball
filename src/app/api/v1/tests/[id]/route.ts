@@ -11,6 +11,7 @@ import {
   checkTestUpdateAuthorization,
   checkTestDeleteAuthorization,
 } from '@/lib/authorization'
+import { belongsToUserOrganization, hasCoachPermissions } from '@/lib/authorization/types'
 import { handleApiError } from '@/lib/api-error-handler'
 
 export async function GET(
@@ -53,24 +54,32 @@ export async function GET(
     const authError = checkTestReadAuthorization(context, test)
     if (authError) return authError
 
-    const testResults = await db
-      .select({
-        result: schema.testResults,
-        player: schema.players,
-      })
-      .from(schema.testResults)
-      .leftJoin(
-        schema.players,
-        eq(schema.testResults.playerId, schema.players.id)
-      )
-      .where(eq(schema.testResults.testId, id))
-      .orderBy(desc(schema.testResults.createdAt))
+    const includeResults =
+      test.visibility !== 'coaches-only' ||
+      context.isSystemAdmin ||
+      (belongsToUserOrganization(context, test.organizationId) &&
+        hasCoachPermissions(context))
 
-    const resultsWithTotal = testResults.map((row) => ({
-      ...row.result,
-      totalScore: testsService.calculateTotalScore(row.result),
-      player: row.player,
-    }))
+    const resultsWithTotal = includeResults
+      ? (
+          await db
+            .select({
+              result: schema.testResults,
+              player: schema.players,
+            })
+            .from(schema.testResults)
+            .leftJoin(
+              schema.players,
+              eq(schema.testResults.playerId, schema.players.id)
+            )
+            .where(eq(schema.testResults.testId, id))
+            .orderBy(desc(schema.testResults.createdAt))
+        ).map((row) => ({
+          ...row.result,
+          totalScore: testsService.calculateTotalScore(row.result),
+          player: row.player,
+        }))
+      : []
 
     const testWithCalculatedFields = {
       ...test,

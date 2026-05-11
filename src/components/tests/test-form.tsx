@@ -46,7 +46,7 @@ const testSchema = z.object({
     .min(0, 'Recovery time cannot be negative')
     .max(300, 'Recovery time cannot exceed 300'),
   dateConducted: z.date(),
-  visibility: z.enum(['public', 'private']),
+  visibility: z.enum(['public', 'private', 'coaches-only']),
   description: z
     .string()
     .max(1000, 'Description cannot exceed 1000 characters')
@@ -281,6 +281,10 @@ const TestForm = ({ test, onSuccess, onCancel }: TestFormProps) => {
                     <div className='flex items-center space-x-2'>
                       <RadioGroupItem value='private' id='private' />
                       <label htmlFor='private'>Private</label>
+                    </div>
+                    <div className='flex items-center space-x-2'>
+                      <RadioGroupItem value='coaches-only' id='coaches-only' />
+                      <label htmlFor='coaches-only'>Coaches only</label>
                     </div>
                   </RadioGroup>
                 </FormControl>

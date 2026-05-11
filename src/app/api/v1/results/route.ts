@@ -24,6 +24,7 @@ import { resultsService } from '@/lib/services/results.service'
 import { getOrganizationContext } from '@/lib/organization-helpers'
 import { calculateAge, getAgeGroup } from '@/db/schema'
 import { checkResultCreateAuthorization } from '@/lib/authorization'
+import { hasCoachPermissions } from '@/lib/authorization/types'
 import { handleApiError } from '@/lib/api-error-handler'
 
 export async function GET(request: NextRequest) {
@@ -111,15 +112,30 @@ export async function GET(request: NextRequest) {
     // 3. Non-authenticated users: see results from public tests + tests without org
     if (!isSystemAdmin) {
       if (organization?.id) {
-        // Org members: can see results from tests in their organization (public + private),
-        // all public tests, and all tests without organization
-        conditions.push(
-          or(
-            isNull(schema.tests.organizationId),
-            eq(schema.tests.organizationId, organization.id),
-            eq(schema.tests.visibility, 'public')
+        if (hasCoachPermissions(context)) {
+          // Coaches/admins/owners: can see their org results (including coaches-only),
+          // all public tests, and all tests without organization
+          conditions.push(
+            or(
+              isNull(schema.tests.organizationId),
+              eq(schema.tests.organizationId, organization.id),
+              eq(schema.tests.visibility, 'public')
+            )
           )
-        )
+        } else {
+          // Players/members: can see results from public tests + tests without org,
+          // plus private tests from their org (but NOT coaches-only)
+          conditions.push(
+            or(
+              isNull(schema.tests.organizationId),
+              eq(schema.tests.visibility, 'public'),
+              and(
+                eq(schema.tests.organizationId, organization.id),
+                eq(schema.tests.visibility, 'private')
+              )
+            )
+          )
+        }
       } else {
         // Non-authenticated users: can only see results from public tests and tests without organization
         conditions.push(

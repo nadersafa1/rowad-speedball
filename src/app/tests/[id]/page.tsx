@@ -344,6 +344,14 @@ const TestDetailPage = () => {
             </div>
           </CardHeader>
           <CardContent>
+            {selectedTest.visibility === 'coaches-only' &&
+              !canUpdate &&
+              !isResultsLoading &&
+              pagination.totalItems === 0 && (
+                <div className='mb-4 rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground'>
+                  Results for this test are visible to coaches/admins only.
+                </div>
+              )}
             <ResultsTable
               results={results}
               pagination={pagination}

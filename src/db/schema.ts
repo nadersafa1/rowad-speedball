@@ -598,7 +598,7 @@ export const tests = pgTable(
     recoveryTime: integer('recovery_time').notNull(),
     dateConducted: date('date_conducted').notNull(),
     description: text('description'),
-    visibility: text('visibility', { enum: ['public', 'private'] })
+    visibility: text('visibility', { enum: ['public', 'private', 'coaches-only'] })
       .notNull()
       .default('public'),
     organizationId: uuid('organization_id').references(() => organization.id, {

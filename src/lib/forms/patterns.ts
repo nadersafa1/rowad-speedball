@@ -348,6 +348,13 @@ export const visibilitySchema = z.enum(['public', 'private'], {
   message: 'Please select visibility',
 })
 
+/**
+ * Test visibility validation (includes coaches-only)
+ */
+export const testVisibilitySchema = z.enum(['public', 'private', 'coaches-only'], {
+  message: 'Please select visibility',
+})
+
 // ============================================================================
 // Validation Result Helpers
 // ============================================================================

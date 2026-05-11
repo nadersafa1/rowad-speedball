@@ -44,6 +44,7 @@ interface RawResultRow {
  */
 function buildVisibilityCondition(
   isSystemAdmin: boolean,
+  hasCoachAccess: boolean,
   organizationId?: string,
 ): SQL | undefined {
   if (isSystemAdmin) return undefined
@@ -54,7 +55,16 @@ function buildVisibilityCondition(
   )
 
   if (organizationId) {
-    return or(publicOrUnscoped, eq(schema.tests.organizationId, organizationId))
+    if (hasCoachAccess) {
+      // Coaches/admins/owners: can include coaches-only tests from their org
+      return or(publicOrUnscoped, eq(schema.tests.organizationId, organizationId))
+    }
+
+    // Players/members: can include private tests from their org, but not coaches-only
+    return or(
+      publicOrUnscoped,
+      and(eq(schema.tests.organizationId, organizationId), eq(schema.tests.visibility, 'private')),
+    )
   }
 
   return publicOrUnscoped
@@ -166,6 +176,7 @@ export async function GET(request: NextRequest) {
 
     const visibilityCondition = buildVisibilityCondition(
       isSystemAdmin,
+      context.isCoach || context.isAdmin || context.isOwner || context.isSystemAdmin,
       organization?.id,
     )
     if (visibilityCondition) {

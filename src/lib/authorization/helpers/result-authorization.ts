@@ -83,7 +83,15 @@ export function checkResultReadAuthorization(
   const hasNoOrganization = test.organizationId === null
   const isFromUserOrg = belongsToUserOrganization(context, test.organizationId)
 
-  // Allow if: public OR no organization OR from user's org
+  // coaches-only: only system admins or same-org owner/admin/coach can read results
+  if (test.visibility === 'coaches-only') {
+    if (!isFromUserOrg || !hasCoachPermissions(context)) {
+      return forbiddenResponse('Forbidden')
+    }
+    return null
+  }
+
+  // Allow if: public OR no organization OR from user's org (private)
   // Block if: private AND has organization AND not from user's org
   if (!isPublic && !hasNoOrganization && !isFromUserOrg) {
     return forbiddenResponse('Forbidden')

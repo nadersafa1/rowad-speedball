@@ -121,10 +121,10 @@ export async function GET(request: NextRequest) {
     // - If no visibility param: non-authenticated users get visibility='public' filter
     //   (org members don't need this filter as visibility is already handled in OR condition above)
     if (visibility) {
-      if (visibility === 'private' && !isSystemAdmin) {
-        // Only system admins can filter by private tests
+      if (visibility !== 'public' && !isSystemAdmin) {
+        // Only system admins can filter by non-public tests
         return Response.json(
-          { message: 'Cannot filter private tests' },
+          { message: 'Cannot filter non-public tests' },
           { status: 403 }
         )
       }
@@ -192,8 +192,17 @@ export async function GET(request: NextRequest) {
       .from(schema.tests)
       .where(
         combinedCondition
-          ? and(combinedCondition, eq(schema.tests.visibility, 'private'))
-          : eq(schema.tests.visibility, 'private')
+          ? and(
+              combinedCondition,
+              or(
+                eq(schema.tests.visibility, 'private'),
+                eq(schema.tests.visibility, 'coaches-only')
+              )
+            )
+          : or(
+              eq(schema.tests.visibility, 'private'),
+              eq(schema.tests.visibility, 'coaches-only')
+            )
       )
 
     const [countResult, dataResult, publicCountResult, privateCountResult] =

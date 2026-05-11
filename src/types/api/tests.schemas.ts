@@ -4,7 +4,7 @@ import {
   uuidSchema,
   optionalUuidSchema,
   descriptionSchema,
-  visibilitySchema,
+  testVisibilitySchema,
   positiveIntSchema,
   nonNegativeIntSchema,
 } from '@/lib/forms/patterns'
@@ -47,7 +47,7 @@ export const testsQuerySchema = z
         (date) => !date || !isNaN(Date.parse(date)),
         'Invalid date format for dateTo'
       ),
-    visibility: visibilitySchema.optional(),
+    visibility: testVisibilitySchema.optional(),
     organizationId: z
       .string()
       .optional()
@@ -104,7 +104,7 @@ export const testsCreateSchema = z
       .string()
       .refine((date) => !isNaN(Date.parse(date)), 'Invalid date format'),
     description: descriptionSchema,
-    visibility: visibilitySchema.optional().default('public'),
+    visibility: testVisibilitySchema.optional().default('public'),
     organizationId: optionalUuidSchema,
   })
   .strict()
@@ -125,7 +125,7 @@ export const testsUpdateSchema = z
       .refine((date) => !isNaN(Date.parse(date)), 'Invalid date format')
       .optional(),
     description: descriptionSchema,
-    visibility: visibilitySchema.optional(),
+    visibility: testVisibilitySchema.optional(),
     organizationId: optionalUuidSchema,
   })
   .refine(
