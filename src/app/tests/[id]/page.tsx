@@ -130,23 +130,6 @@ const TestDetailPage = () => {
     return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
   }
 
-  // Get unique values for filters from all results (we'll need to fetch all for this)
-  // For now, we'll get them from the current results
-  const uniqueAgeGroups = Array.from(
-    new Set(results.map((r) => r.player?.ageGroup).filter(Boolean))
-  ) as string[]
-  const uniqueYears = Array.from(
-    new Set(
-      results
-        .map((r) =>
-          r.player?.dateOfBirth
-            ? new Date(r.player.dateOfBirth).getFullYear()
-            : null
-        )
-        .filter((year): year is number => year !== null)
-    )
-  ).sort((a, b) => b - a)
-
   // For "Results by Age Group" section, we still need all results
   // We'll fetch them separately or use a different approach
   const allResultsForGrouping = results // This will be limited, but we can enhance later
@@ -387,8 +370,6 @@ const TestDetailPage = () => {
               }}
               isLoading={isResultsLoading}
               onRefetch={refetchResults}
-              availableYears={uniqueYears}
-              availableAgeGroups={uniqueAgeGroups}
             />
           </CardContent>
         </Card>

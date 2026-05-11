@@ -26,6 +26,11 @@ import { calculateAge, getAgeGroup } from '@/db/schema'
 import { checkResultCreateAuthorization } from '@/lib/authorization'
 import { hasCoachPermissions } from '@/lib/authorization/types'
 import { handleApiError } from '@/lib/api-error-handler'
+import {
+  playerAgeGroupLabelSql,
+  playerSeasonalAgeSql,
+  testResultTotalScoreSql,
+} from '@/lib/sql/player-age-group-sql'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
@@ -106,6 +111,19 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    if (ageGroup && ageGroup !== 'all') {
+      conditions.push(
+        sql`${playerAgeGroupLabelSql(schema.players.dateOfBirth)} = ${ageGroup}`
+      )
+    }
+
+    if (minScore !== undefined) {
+      conditions.push(sql`${testResultTotalScoreSql()} >= ${minScore}`)
+    }
+    if (maxScore !== undefined) {
+      conditions.push(sql`${testResultTotalScoreSql()} <= ${maxScore}`)
+    }
+
     // Apply organization-based filtering based on user role:
     // 1. System admin: sees all results (unless testId filter is applied)
     // 2. Org members: see results from their org tests + public tests + tests without org
@@ -179,13 +197,7 @@ export async function GET(request: NextRequest) {
 
       switch (sortBy) {
         case 'totalScore':
-          // Calculate total score for sorting - we'll sort after calculating
-          // For now, sort by sum of scores in SQL
-          dataQuery = dataQuery.orderBy(
-            order(
-              sql`${schema.testResults.leftHandScore} + ${schema.testResults.rightHandScore} + ${schema.testResults.forehandScore} + ${schema.testResults.backhandScore}`
-            )
-          ) as any
+          dataQuery = dataQuery.orderBy(order(testResultTotalScoreSql())) as any
           break
         case 'leftHandScore':
           orderField = schema.testResults.leftHandScore
@@ -208,9 +220,9 @@ export async function GET(request: NextRequest) {
           dataQuery = dataQuery.orderBy(order(orderField)) as any
           break
         case 'ageGroup':
-          // Sort by dateOfBirth (younger = higher age group)
-          orderField = schema.players.dateOfBirth
-          dataQuery = dataQuery.orderBy(order(orderField)) as any
+          dataQuery = dataQuery.orderBy(
+            order(playerSeasonalAgeSql(schema.players.dateOfBirth))
+          ) as any
           break
         case 'age':
           orderField = schema.players.dateOfBirth
@@ -228,12 +240,7 @@ export async function GET(request: NextRequest) {
           ) as any
       }
     } else {
-      // Default: sort by total score descending
-      dataQuery = dataQuery.orderBy(
-        desc(
-          sql`${schema.testResults.leftHandScore} + ${schema.testResults.rightHandScore} + ${schema.testResults.forehandScore} + ${schema.testResults.backhandScore}`
-        )
-      ) as any
+      dataQuery = dataQuery.orderBy(desc(testResultTotalScoreSql())) as any
     }
 
     const [countResult, dataResult] = await Promise.all([
@@ -243,7 +250,7 @@ export async function GET(request: NextRequest) {
 
     const totalItems = countResult[0].count
 
-    let resultsWithCalculatedFields = dataResult.map((row) => {
+    const resultsWithCalculatedFields = dataResult.map((row) => {
       const totalScore = resultsService.calculateTotalScore(row.result)
       const playerAge = row.player
         ? calculateAge(row.player.dateOfBirth)
@@ -271,25 +278,6 @@ export async function GET(request: NextRequest) {
         test: row.test,
       }
     })
-
-    // Filter by ageGroup (after calculating age groups)
-    if (ageGroup && ageGroup !== 'all') {
-      resultsWithCalculatedFields = resultsWithCalculatedFields.filter(
-        (result) => result.player?.ageGroup === ageGroup
-      )
-    }
-
-    // Filter by score range (after calculating total score)
-    if (minScore !== undefined || maxScore !== undefined) {
-      resultsWithCalculatedFields = resultsWithCalculatedFields.filter(
-        (result) =>
-          resultsService.isResultInScoreRange(
-            result.totalScore,
-            minScore,
-            maxScore
-          )
-      )
-    }
 
     const paginatedResponse = createPaginatedResponse(
       resultsWithCalculatedFields,

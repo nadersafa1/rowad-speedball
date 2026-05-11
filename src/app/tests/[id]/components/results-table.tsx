@@ -38,12 +38,7 @@ const ResultsTable = ({
   onSortingChange,
   isLoading = false,
   onRefetch,
-  availableYears = [],
-  availableAgeGroups = [],
-}: ResultsTableProps & {
-  availableYears?: number[]
-  availableAgeGroups?: string[]
-}) => {
+}: ResultsTableProps) => {
   const { context } = useOrganizationContext()
   const { isSystemAdmin, isAdmin, isOwner, isCoach } = context
 
@@ -138,8 +133,6 @@ const ResultsTable = ({
         onGenderChange={onGenderChange}
         onAgeGroupChange={onAgeGroupChange}
         onYearOfBirthChange={onYearOfBirthChange}
-        availableYears={availableYears}
-        availableAgeGroups={availableAgeGroups}
       />
       <div className='rounded-md border overflow-x-auto'>
         <Table>
