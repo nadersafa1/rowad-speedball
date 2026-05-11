@@ -8,7 +8,10 @@ import {
   playersParamsSchema,
   playersUpdateSchema,
 } from '@/types/api/players.schemas'
-import { getOrganizationContext } from '@/lib/organization-helpers'
+import {
+  getOrganizationContext,
+  type OrganizationContext,
+} from '@/lib/organization-helpers'
 import { validateUserNotLinked } from '@/lib/user-linking-helpers'
 import { sendOrganizationRemovalEmail } from '@/actions/emails/send-organization-removal-email'
 import { sendOrganizationWelcomeEmail } from '@/actions/emails/send-organization-welcome-email'
@@ -17,6 +20,26 @@ import {
   checkPlayerDeleteAuthorization,
 } from '@/lib/authorization'
 import { handleApiError } from '@/lib/api-error-handler'
+import {
+  belongsToUserOrganization,
+  hasCoachPermissions,
+} from '@/lib/authorization/types'
+
+function canIncludeTestResultForViewer(
+  context: OrganizationContext,
+  test: typeof schema.tests.$inferSelect | null
+): boolean {
+  if (!test || test.visibility !== 'coaches-only') {
+    return true
+  }
+  if (context.isSystemAdmin) {
+    return true
+  }
+  return (
+    belongsToUserOrganization(context, test.organizationId) &&
+    hasCoachPermissions(context)
+  )
+}
 
 export async function GET(
   request: NextRequest,
@@ -64,11 +87,13 @@ export async function GET(
       .where(eq(schema.testResults.playerId, id))
       .orderBy(desc(schema.testResults.createdAt))
 
-    const resultsWithTotal = playerResults.map((row) => ({
-      ...row.result,
-      totalScore: calculateTotalScore(row.result),
-      test: row.test,
-    }))
+    const resultsWithTotal = playerResults
+      .filter((row) => canIncludeTestResultForViewer(context, row.test))
+      .map((row) => ({
+        ...row.result,
+        totalScore: calculateTotalScore(row.result),
+        test: row.test,
+      }))
 
     const playerWithAge = {
       ...playerData,
