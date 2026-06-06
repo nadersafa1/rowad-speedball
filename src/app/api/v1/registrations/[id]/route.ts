@@ -9,18 +9,18 @@ import {
 } from '@/types/api/registrations.schemas'
 import { getOrganizationContext } from '@/lib/organization-helpers'
 import {
-  checkEventUpdateAuthorization,
-  checkEventDeleteAuthorization,
+  checkRegistrationUpdateAuthorization,
   checkRegistrationDeleteAuthorization,
+  isSystemAdmin,
 } from '@/lib/authorization'
 import {
-  addPlayersToRegistration,
   checkPlayersAlreadyRegistered,
   enrichRegistrationWithPlayers,
 } from '@/lib/registration-helpers'
 import {
   validateRegistrationPlayerCount,
   validateGenderRulesForPlayers,
+  validatePlayersBelongToOrganization,
 } from '@/lib/validations/registration-validation'
 import { handleApiError } from '@/lib/api-error-handler'
 
@@ -73,12 +73,13 @@ export async function PATCH(
     }
 
     // Check authorization based on parent event
-    const authError = checkEventUpdateAuthorization(context, event[0])
+    const authError = checkRegistrationUpdateAuthorization(context, event[0])
     if (authError) {
       return authError
     }
 
     const eventData = event[0]
+    const systemAdmin = isSystemAdmin(context)
     const { playerIds, players, ...otherUpdateData } = updateData
 
     // Handle player updates if provided
@@ -125,6 +126,15 @@ export async function PATCH(
           { message: `Player ${missingIndex + 1} not found` },
           { status: 404 }
         )
+      }
+
+      const orgValidation = validatePlayersBelongToOrganization(
+        playersData.filter((p): p is NonNullable<typeof p> => p !== null),
+        eventData.organizationId,
+        systemAdmin
+      )
+      if (!orgValidation.valid) {
+        return Response.json({ message: orgValidation.error }, { status: 400 })
       }
 
       // Validate gender rules
@@ -264,11 +274,8 @@ export async function DELETE(
     }
 
     // Check authorization based on parent event
-    // Exception: Coaches CAN delete registrations for events that are children of a session
     const eventData = event[0]
-    const authError = eventData.trainingSessionId
-      ? checkRegistrationDeleteAuthorization(context, eventData)
-      : checkEventDeleteAuthorization(context, eventData)
+    const authError = checkRegistrationDeleteAuthorization(context, eventData)
     if (authError) {
       return authError
     }

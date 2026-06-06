@@ -79,6 +79,30 @@ export const addPlayersToRegistration = async (
 }
 
 /**
+ * Returns all player IDs already registered for an event
+ */
+export const getRegisteredPlayerIdsForEvent = async (
+  eventId: string
+): Promise<string[]> => {
+  const eventRegistrations = await db
+    .select({ id: schema.registrations.id })
+    .from(schema.registrations)
+    .where(eq(schema.registrations.eventId, eventId))
+
+  if (eventRegistrations.length === 0) {
+    return []
+  }
+
+  const registrationIds = eventRegistrations.map((r) => r.id)
+  const existingPlayers = await db
+    .select({ playerId: schema.registrationPlayers.playerId })
+    .from(schema.registrationPlayers)
+    .where(inArray(schema.registrationPlayers.registrationId, registrationIds))
+
+  return existingPlayers.map((p) => p.playerId)
+}
+
+/**
  * Checks if any of the given player IDs are already registered for an event
  */
 export const checkPlayersAlreadyRegistered = async (

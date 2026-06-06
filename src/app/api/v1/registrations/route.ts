@@ -13,8 +13,9 @@ import {
   validateGenderRulesForPlayers,
 } from '@/lib/validations/registration-validation'
 import {
-  checkEventCreateAuthorization,
   checkEventReadAuthorization,
+  checkRegistrationCreateAuthorization,
+  isSystemAdmin,
 } from '@/lib/authorization'
 import {
   enrichRegistrationWithPlayers,
@@ -25,6 +26,11 @@ import { validatePositionAssignments } from '@/lib/utils/position-utils'
 import { getRegistrationTotalScore } from '@/lib/utils/score-calculations'
 import { createPaginatedResponse } from '@/types/api/pagination'
 import { handleApiError } from '@/lib/api-error-handler'
+import {
+  validateEventIsClubScoped,
+  validateRegistrationWindow,
+  validatePlayersBelongToOrganization,
+} from '@/lib/validations/registration-validation'
 
 /**
  * Optimized GET /api/v1/registrations
@@ -438,8 +444,23 @@ export async function POST(request: NextRequest) {
     const eventData = event[0]
 
     // Authorization check
-    const authError = checkEventCreateAuthorization(context)
+    const authError = checkRegistrationCreateAuthorization(context, eventData)
     if (authError) return authError
+
+    const systemAdmin = isSystemAdmin(context)
+
+    const clubScopeValidation = validateEventIsClubScoped(
+      eventData.organizationId,
+      systemAdmin
+    )
+    if (!clubScopeValidation.valid) {
+      return Response.json({ message: clubScopeValidation.error }, { status: 400 })
+    }
+
+    const windowValidation = validateRegistrationWindow(eventData)
+    if (!windowValidation.valid) {
+      return Response.json({ message: windowValidation.error }, { status: 400 })
+    }
 
     // Validate player count based on min/max configuration
     const countValidation = validateRegistrationPlayerCount(
@@ -480,6 +501,15 @@ export async function POST(request: NextRequest) {
         { message: `Player ${missingIndex + 1} not found` },
         { status: 404 }
       )
+    }
+
+    const orgValidation = validatePlayersBelongToOrganization(
+      playersData.filter((p): p is NonNullable<typeof p> => p !== null),
+      eventData.organizationId,
+      systemAdmin
+    )
+    if (!orgValidation.valid) {
+      return Response.json({ message: orgValidation.error }, { status: 400 })
     }
 
     // Validate gender rules

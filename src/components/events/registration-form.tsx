@@ -363,7 +363,7 @@ const RegistrationForm = ({
               } to register`}
           {event.minPlayers !== event.maxPlayers &&
             ` (${event.minPlayers}-${event.maxPlayers} players)`}
-          .
+          . Only players from your club are eligible.
         </DialogDescription>
       </DialogHeader>
 
@@ -401,6 +401,7 @@ const RegistrationForm = ({
                             gender={
                               event.gender === 'mixed' ? 'all' : event.gender
                             }
+                            organizationId={event.organizationId}
                             onValueChange={formField.onChange}
                             placeholder='Select player'
                             excludedPlayerIds={getExcludedIdsForSlot(index)}
@@ -461,6 +462,7 @@ const RegistrationForm = ({
                           gender={
                             event.gender === 'mixed' ? 'all' : event.gender
                           }
+                          organizationId={event.organizationId}
                           placeholder={`Select ${getPlayerLabel(
                             index
                           ).toLowerCase()}`}
