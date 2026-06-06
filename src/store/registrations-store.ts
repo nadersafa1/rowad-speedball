@@ -24,6 +24,13 @@ interface RegistrationsState {
     playerIds: string[]
     players?: { playerId: string; position?: string | null; order?: number }[]
   }) => Promise<void>
+  bulkCreateRegistrations: (data: {
+    eventId: string
+    playerIds: string[]
+  }) => Promise<{
+    count: number
+    errors: { playerId: string; playerName: string; error: string }[]
+  }>
   updateRegistration: (id: string, data: any) => Promise<void>
   deleteRegistration: (id: string) => Promise<void>
   clearError: () => void
@@ -131,6 +138,33 @@ export const useRegistrationsStore = create<RegistrationsState>((set, get) => ({
           error instanceof Error
             ? error.message
             : 'Failed to create registration',
+        isLoading: false,
+      })
+      throw error
+    }
+  },
+
+  bulkCreateRegistrations: async (data) => {
+    set({ isLoading: true, error: null })
+    try {
+      const result = await apiClient.bulkCreateRegistrations(data)
+      set((state) => ({
+        pagination: {
+          ...state.pagination,
+          totalItems: state.pagination.totalItems + result.count,
+          totalPages: Math.ceil(
+            (state.pagination.totalItems + result.count) / state.pagination.limit
+          ),
+        },
+        isLoading: false,
+      }))
+      return result
+    } catch (error) {
+      set({
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to create bulk registrations',
         isLoading: false,
       })
       throw error

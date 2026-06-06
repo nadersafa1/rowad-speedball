@@ -8,7 +8,7 @@ import { useGroupsStore } from '@/store/groups-store'
 import { useRegistrationsStore } from '@/store/registrations-store'
 import { useMatchesStore } from '@/store/matches-store'
 import { useEventPermissions } from '@/hooks/authorization/use-event-permissions'
-import { useOrganizationContext } from '@/hooks/authorization/use-organization-context'
+import { useRegistrationPermissions } from '@/hooks/authorization/use-registration-permissions'
 import GroupManagement from '@/components/events/group-management'
 import BracketSeeding from '@/components/events/bracket-seeding'
 import HeatManagement from '@/components/events/heat-management'
@@ -64,15 +64,11 @@ const EventDetailPage = () => {
   } = useRegistrationsStore()
   const { matches, fetchMatches } = useMatchesStore()
   const { canUpdate, canDelete, canCreate } = useEventPermissions(selectedEvent)
-  const { context } = useOrganizationContext()
-
-  // Coaches can only delete registrations for session-child events
-  const canDeleteRegistration = useMemo(() => {
-    if (!selectedEvent) return false
-    if (context.isSystemAdmin || context.isAdmin || context.isOwner) return canDelete
-    if (context.isCoach && selectedEvent.trainingSessionId) return canDelete
-    return false
-  }, [selectedEvent, canDelete, context])
+  const {
+    canCreate: canCreateRegistration,
+    canUpdate: canUpdateRegistration,
+    canDelete: canDeleteRegistration,
+  } = useRegistrationPermissions(selectedEvent?.organizationId)
 
   // Update activeTab when URL changes
   useEffect(() => {
@@ -254,12 +250,14 @@ const EventDetailPage = () => {
           <EventRegistrationsTab
             event={selectedEvent}
             registrations={registrations}
-            canCreate={canCreate}
-            canUpdate={canUpdate}
+            canCreate={canCreateRegistration}
+            canUpdate={canUpdateRegistration}
             canDelete={canDeleteRegistration}
+            organizationId={selectedEvent.organizationId}
             onAddRegistration={() => dialogs.openRegistrationForm()}
             onEditRegistration={(id) => dialogs.openRegistrationForm(id)}
             onDeleteRegistration={dialogs.openDeleteRegistration}
+            onRefresh={handleRefresh}
             hasMore={
               registrationsPagination.page < registrationsPagination.totalPages
             }

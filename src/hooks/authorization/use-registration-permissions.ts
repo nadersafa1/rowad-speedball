@@ -22,8 +22,10 @@ export const useRegistrationPermissions = (eventOrganizationId?: string | null) 
       !!organization?.id && eventOrganizationId === organization.id
 
     // Create permission: System admins, org admins, org owners, org coaches
+    // Must be from user's org (unless system admin)
     const canCreate =
-      isSystemAdmin || ((isAdmin || isOwner || isCoach) && !!organization?.id)
+      (isSystemAdmin || isAdmin || isOwner || isCoach) &&
+      (isSystemAdmin || (isEventFromUserOrg && !!organization?.id))
 
     // Read permission: Registrations inherit visibility from parent events
     const canRead = true

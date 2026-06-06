@@ -314,3 +314,106 @@ export const validateGenderRulesForPlayers = (
 
   return { valid: true }
 }
+
+type PlayerOrgRecord = { organizationId: string | null }
+
+/**
+ * Validates that an event belongs to a club (has organizationId).
+ * System admins may register for events without an organization.
+ */
+export const validateEventIsClubScoped = (
+  eventOrganizationId: string | null | undefined,
+  isSystemAdmin: boolean
+): ValidationResult => {
+  if (isSystemAdmin) {
+    return { valid: true }
+  }
+
+  if (!eventOrganizationId) {
+    return {
+      valid: false,
+      error: 'Registrations can only be added to club events',
+    }
+  }
+
+  return { valid: true }
+}
+
+/**
+ * Validates registration window (start/end dates) for an event.
+ */
+export const validateRegistrationWindow = (event: {
+  registrationStartDate?: string | null
+  registrationEndDate?: string | null
+}): ValidationResult => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  if (event.registrationStartDate) {
+    const startDate = new Date(event.registrationStartDate)
+    startDate.setHours(0, 0, 0, 0)
+    if (today < startDate) {
+      return {
+        valid: false,
+        error: 'Registration has not opened yet',
+      }
+    }
+  }
+
+  if (event.registrationEndDate) {
+    const endDate = new Date(event.registrationEndDate)
+    endDate.setHours(23, 59, 59, 999)
+    if (today > endDate) {
+      return {
+        valid: false,
+        error: 'Registration period has ended',
+      }
+    }
+  }
+
+  return { valid: true }
+}
+
+/**
+ * Validates that all players belong to the event's organization.
+ * System admins may register players from any organization.
+ */
+export const validatePlayersBelongToOrganization = (
+  players: PlayerOrgRecord[],
+  eventOrganizationId: string | null | undefined,
+  isSystemAdmin: boolean
+): ValidationResult => {
+  if (isSystemAdmin) {
+    return { valid: true }
+  }
+
+  if (!eventOrganizationId) {
+    return {
+      valid: false,
+      error: 'Event must belong to a club to register players',
+    }
+  }
+
+  const invalidPlayer = players.find(
+    (p) => p.organizationId !== eventOrganizationId
+  )
+  if (invalidPlayer) {
+    return {
+      valid: false,
+      error: 'All players must belong to the event club',
+    }
+  }
+
+  return { valid: true }
+}
+
+/**
+ * Checks if a player's gender matches the event gender requirements.
+ */
+export const isPlayerGenderEligible = (
+  eventGender: 'male' | 'female' | 'mixed',
+  playerGender: 'male' | 'female'
+): boolean => {
+  if (eventGender === 'mixed') return true
+  return eventGender === playerGender
+}

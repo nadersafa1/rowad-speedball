@@ -128,6 +128,20 @@ export const playerPositionScoresUpdateSchema = z.object({
     ),
 })
 
+// Eligibility check schema for POST /registrations/eligibility
+export const registrationEligibilitySchema = z.object({
+  eventId: uuidSchema,
+  playerIds: z.array(uuidSchema).optional(),
+})
+
+// Bulk create schema for POST /registrations/bulk
+export const bulkCreateRegistrationsSchema = z.object({
+  eventId: uuidSchema,
+  playerIds: z
+    .array(uuidSchema)
+    .min(1, 'At least one player is required'),
+})
+
 // Inferred TypeScript types
 export type RegistrationsQuery = z.infer<typeof registrationsQuerySchema>
 export type RegistrationsParams = z.infer<typeof registrationsParamsSchema>
@@ -137,4 +151,10 @@ export type PlayerPositionScoresUpdate = z.infer<
   typeof playerPositionScoresUpdateSchema
 >
 export type PlayerWithPosition = z.infer<typeof playerWithPositionSchema>
+export type RegistrationEligibilityInput = z.infer<
+  typeof registrationEligibilitySchema
+>
+export type BulkCreateRegistrationsInput = z.infer<
+  typeof bulkCreateRegistrationsSchema
+>
 export type { PositionScores, PositionKey }

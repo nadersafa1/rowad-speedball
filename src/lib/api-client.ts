@@ -773,6 +773,39 @@ export class ApiClient {
     })
   }
 
+  async checkRegistrationEligibility(data: {
+    eventId: string
+    playerIds?: string[]
+  }) {
+    return this.request<{
+      data: {
+        playerId: string
+        playerName: string
+        playerGender: string
+        isEligible: boolean
+        isRegistered: boolean
+        genderMatch: boolean
+        isClubMember: boolean
+        blockReason?: string
+      }[]
+    }>('/registrations/eligibility',
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      },
+    )
+  }
+
+  async bulkCreateRegistrations(data: { eventId: string; playerIds: string[] }) {
+    return this.request<{
+      count: number
+      errors: { playerId: string; playerName: string; error: string }[]
+    }>('/registrations/bulk', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
   // ========================================
   // Player Position Scores methods
   // ========================================
